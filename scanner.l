@@ -68,7 +68,8 @@ BOOLEAN   (true|false)
 [\n]		{currentLineNum++; currentColNum = 1;}
 
 void 		{return T_Void;}
-bool		{return T_Bool;}
+{BOOLEAN}	{yylval.boolConstant = (yytext[0] == 't');
+			return T_BoolConstant;}
 
 %%
 
