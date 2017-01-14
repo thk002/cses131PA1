@@ -56,8 +56,13 @@ int currentLineNum, currentColNum;
   * as a simple substitution mechanism that allows for more readable
   * entries in the Rules section later. 
   */
-
+INTEGER		(-?{DIGIT}+)
+UINTEGER	(-?{DIGIT}+u|U)
+FLOAT	(-?{DIGIT}+\.{DIGIT}+f|F?)
 BOOLEAN   (true|false)
+DIGIT	([0-9])
+NONDIGIT	(_|[a-z]|[A-Z])
+IDENTIFIER	({NONDIGIT}[_a-zA-Z0-9]*)
 
 %x ML_COMMENT
 %%             /* BEGIN RULES SECTION */
@@ -70,6 +75,53 @@ BOOLEAN   (true|false)
 void 		{return T_Void;}
 {BOOLEAN}	{yylval.boolConstant = (yytext[0] == 't');
 			return T_BoolConstant;}
+"while"		{return T_While;}
+"bool"		{return T_Bool;}
+"float"		{return T_Float;}
+"int"		{return T_Int;}
+"uint"		{return T_Uint;}
+"vec2"		{return T_Vec2;}
+"vec3"		{return T_Vec3;}
+"vec4"		{return T_Vec4;}
+"ivec2"    	{return T_Ivec2;}
+"ivec3"   	{return T_Ivec3;}
+"ivec4"   	{return T_Ivec4;}
+"bvec2"    	{return T_Bvec2;}
+"bvec3"    	{return T_Bvec3;}
+"bvec4"   	{return T_Bvec4;}
+"uvec2"		{return T_Uvec2;}
+"uvec3"		{return T_Uvec3;}
+"uvec4"		{return T_Uvec4;}
+"mat2"		{return T_Mat2;}
+"mat3"		{return T_Mat3;}
+"mat4"		{return T_Mat4;}
+"struct"	{return T_Struct;}
+"in"		{return T_In;}
+"out"		{return T_Out;}
+"const"		{return T_Const;}
+"uniform"	{return T_Uniform;}
+"break"		{return T_Break;}
+"continue"	{return T_Continue;}
+"do"		{return T_Do;}
+"else"		{return T_Else;}
+"for"		{return T_For;}
+"if"		{return T_If;}
+"return"	{return T_Return;}
+"switch"	{return T_Switch;}
+"case"		{return T_Case;}
+"default"	{return T_Default;}
+
+{INTEGER}	{yylval.integerConstant = atoi(yytext);
+			return T_IntConstant;}
+{UINTEGER}	{yylval.integerConstant = atoi(yytext);
+			return T_UintConstant;}
+{FLOAT}		{yylval.floatConstant = atof(yytext);
+			return T_FloatConstant;}
+
+{IDENTIFIER}	{return T_Identifier;}
+
+
+
 
 %%
 
