@@ -58,11 +58,15 @@ int currentLineNum, currentColNum;
   */
 INTEGER		(-?{DIGIT}+)
 UINTEGER	(-?{DIGIT}+u|U)
-FLOAT	(-?{DIGIT}+\.{DIGIT}+f|F?)
+FRAC	({DIGIT}+\.{DIGIT}+)
+EXP	((e|E)?{DIGIT}+)
+FLOAT	((-?{FRAC}{EXP}?(f|F)?)|(-?{DIGIT}+{EXP}(f|F)?))
 BOOLEAN   (true|false)
 DIGIT	([0-9])
 NONDIGIT	(_|[a-z]|[A-Z])
 IDENTIFIER	({NONDIGIT}[_a-zA-Z0-9]*)
+COMMENT	((\/\/.*)|(\/\*(.|\n)*\*\/))
+UNTERM	(\/\*(.|\n)*)
 
 %x ML_COMMENT
 %%             /* BEGIN RULES SECTION */
@@ -71,7 +75,8 @@ IDENTIFIER	({NONDIGIT}[_a-zA-Z0-9]*)
   */ 
 
 [\n]		{currentLineNum++; currentColNum = 1;}
-
+[\t]		{currentColNum+=8;}
+[\s]		{currentColNum++;}
 void 		{return T_Void;}
 {BOOLEAN}	{yylval.boolConstant = (yytext[0] == 't');
 			return T_BoolConstant;}
@@ -111,6 +116,38 @@ void 		{return T_Void;}
 "case"		{return T_Case;}
 "default"	{return T_Default;}
 
+":"	{return T_Colon;}
+";"	{return T_Semicolon;}
+"{"	{return T_LeftBrace;}
+"}"	{return T_RightBrace;}
+"("	{return T_LeftParen;}
+")"	{return T_RightParen;}
+"["	{return T_LeftBracket;}
+"]"	{return T_RightBracket;}
+"-"     {return T_Dash;}
+"+"     {return T_Plus;}
+"*"     {return T_Star;}
+"/"     {return T_Slash;}
+"<"     {return T_LeftAngle;}
+">"     {return T_RightAngle;}
+"?"     {return T_Question;}
+"."	{return T_Dot;}
+
+
+"++"    {return T_Inc;}
+"--"    {return T_Dec;}
+"<="    {return T_LessEqual;}
+">="    {return T_GreaterEqual;}
+"!="    {return T_NE;}
+"=="    {return T_EQ;}
+"="     {return T_Equal;}
+"&&"    {return T_And;}
+"||"    {return T_Or;}
+"*="    {return T_MulAssign;}
+"/="    {return T_DivAssign;}
+"+="    {return T_AddAssign;}
+"-="    {return T_SubAssign;}
+
 {INTEGER}	{yylval.integerConstant = atoi(yytext);
 			return T_IntConstant;}
 {UINTEGER}	{yylval.integerConstant = atoi(yytext);
@@ -118,10 +155,15 @@ void 		{return T_Void;}
 {FLOAT}		{yylval.floatConstant = atof(yytext);
 			return T_FloatConstant;}
 
-{IDENTIFIER}	{return T_Identifier;}
+{IDENTIFIER}	{if(strlen(yytext)>1024)
+			ReportError::LongIdentifier(&yylloc, yytext);
+		strncpy(yylval.identifier, yytext, MaxIdentLen);
+		yylval.identifier[MaxIdentLen]='\0';	
+		return T_Identifier;}
 
+{COMMENT}	{currentColNum++;}
 
-
+{UNTERM}	{ReportError::UntermComment();} 
 
 %%
 
