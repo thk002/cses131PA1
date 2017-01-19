@@ -68,7 +68,8 @@ NONDIGIT	(_|[a-z]|[A-Z])
 IDENTIFIER	({NONDIGIT}[_a-zA-Z0-9]*)
 INVALID ([\^#@$`\\"!%|&])
 COMMENT	(\/\/.*)
-%x ML_COMMENT
+
+%x ML_COMMENT FIELDS
 %%             /* BEGIN RULES SECTION */
  /* All patterns and actions should be placed between the start and stop
   * %% markers which delimit the Rules section. 
@@ -84,7 +85,7 @@ COMMENT	(\/\/.*)
 
 [\n]		{currentLineNum++; currentColNum = 1;}
 [\t]		{currentColNum += 8 - ((currentColNum -1) % 8);}
-[' ']		{}
+[' ']		{ }
 void 		{return T_Void;}
 {BOOLEAN}	{yylval.boolConstant = (yytext[0] == 't');
 			return T_BoolConstant;}
@@ -139,7 +140,7 @@ void 		{return T_Void;}
 "<"     {return T_LeftAngle;}
 ">"     {return T_RightAngle;}
 "?"     {return T_Question;}
-"."	{return T_Dot;}
+"."	{BEGIN(FIELDS); return T_Dot;}
 
 
 "++"    {return T_Inc;}
@@ -155,6 +156,8 @@ void 		{return T_Void;}
 "/="    {return T_DivAssign;}
 "+="    {return T_AddAssign;}
 "-="    {return T_SubAssign;}
+
+
 
 {INTEGER}	{yylval.integerConstant = atoi(yytext);
 			return T_IntConstant;}
@@ -172,7 +175,17 @@ void 		{return T_Void;}
 			strcpy(yylval.identifier, yytext);		
 		return T_Identifier;}
 
-
+<FIELDS>{IDENTIFIER} {
+		BEGIN(INITIAL);
+		if(strlen(yytext)>1023){
+			ReportError::LongIdentifier(&yylloc, yytext);
+			strncpy(yylval.identifier, yytext, MaxIdentLen);
+			yylval.identifier[MaxIdentLen]='\0';
+		}
+		else
+			strcpy(yylval.identifier, yytext);		
+		return T_FieldSelection;}
+<FIELDS>[ \t\r]	{ }
 {INVALID}	{ReportError::UnrecogChar(&yylloc, yytext[0]);}
 {COMMENT}
 %%
