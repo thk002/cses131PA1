@@ -56,27 +56,35 @@ int currentLineNum, currentColNum;
   * as a simple substitution mechanism that allows for more readable
   * entries in the Rules section later. 
   */
-INTEGER		(-?{DIGIT}+)
-UINTEGER	(-?{DIGIT}+u|U)
+INTEGER		({DIGIT}+)
+UINTEGER	({DIGIT}+(u|U))
+SIGN	([-+])
 FRAC	({DIGIT}+\.{DIGIT}+)
-EXP	((e|E)?{DIGIT}+)
-FLOAT	((-?{FRAC}{EXP}?(f|F)?)|(-?{DIGIT}+{EXP}(f|F)?))
+EXP	((e|E){SIGN}?{DIGIT}+)
+FLOAT	(({FRAC}{EXP}?(f|F)?)|({DIGIT}+{EXP}(f|F)?))
 BOOLEAN   (true|false)
 DIGIT	([0-9])
 NONDIGIT	(_|[a-z]|[A-Z])
 IDENTIFIER	({NONDIGIT}[_a-zA-Z0-9]*)
-COMMENT	((\/\/.*)|(\/\*(.|\n)*\*\/))
-UNTERM	(\/\*(.|\n)*)
-
+INVALID ([\^#@$`\\"!%|&])
+COMMENT	(\/\/.*)
 %x ML_COMMENT
 %%             /* BEGIN RULES SECTION */
  /* All patterns and actions should be placed between the start and stop
   * %% markers which delimit the Rules section. 
-  */ 
+  */
+
+ 
+"/*"	{BEGIN(ML_COMMENT);}
+<ML_COMMENT>[^*\n]*
+<ML_COMMENT>"*"+[^*\/\n]*
+<ML_COMMENT>\n	{currentLineNum++;currentColNum=1;}
+<ML_COMMENT>"*"+"\/"	{BEGIN(INITIAL);}
+<ML_COMMENT><<EOF>>	{ReportError::UntermComment();}
 
 [\n]		{currentLineNum++; currentColNum = 1;}
-[\t]		{currentColNum+=8;}
-[\s]		{currentColNum++;}
+[\t]		{currentColNum += 8 - ((currentColNum -1) % 8);}
+[' ']		{}
 void 		{return T_Void;}
 {BOOLEAN}	{yylval.boolConstant = (yytext[0] == 't');
 			return T_BoolConstant;}
@@ -155,16 +163,18 @@ void 		{return T_Void;}
 {FLOAT}		{yylval.floatConstant = atof(yytext);
 			return T_FloatConstant;}
 
-{IDENTIFIER}	{if(strlen(yytext)>1024)
+{IDENTIFIER}	{if(strlen(yytext)>1023){
 			ReportError::LongIdentifier(&yylloc, yytext);
-		strncpy(yylval.identifier, yytext, MaxIdentLen);
-		yylval.identifier[MaxIdentLen]='\0';	
+			strncpy(yylval.identifier, yytext, MaxIdentLen);
+			yylval.identifier[MaxIdentLen]='\0';
+		}
+		else
+			strcpy(yylval.identifier, yytext);		
 		return T_Identifier;}
 
-{COMMENT}	{currentColNum++;}
 
-{UNTERM}	{ReportError::UntermComment();} 
-
+{INVALID}	{ReportError::UnrecogChar(&yylloc, yytext[0]);}
+{COMMENT}
 %%
 
 /* The closing %% above marks the end of the Rules section and the beginning

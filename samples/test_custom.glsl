@@ -12,7 +12,6 @@ stuff
 inside of this comment */ 123e5
 DONE
 false
-/* Oh wow
 true
 look at this unterm
 
