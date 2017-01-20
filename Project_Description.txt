@@ -1,0 +1,5 @@
+We believe our program is correct and robust because we have tried several test cases on it. Other than the ones that were provided to us beforehand, we tried to make our own edge cases and tested to see if our lex passed those as well.
+
+We read all the provided sources first in order to further our knowledge about Flex.We tried to go over the keywords one by one to make sure we didn't miss anything. By starting from the simpler tokens, we were able to have a better understanding of how the more complicated ones worked. 
+
+After we added in the tokens, we added in the comments and errors to further improve the lex. 
