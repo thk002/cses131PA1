@@ -69,7 +69,8 @@ IDENTIFIER	({NONDIGIT}[_a-zA-Z0-9]*)
 INVALID ([\^#@$`\\"!%|&])
 COMMENT	(\/\/.*)
 
-%x ML_COMMENT FIELDS
+%x ML_COMMENT 
+%s FIELDS
 %%             /* BEGIN RULES SECTION */
  /* All patterns and actions should be placed between the start and stop
   * %% markers which delimit the Rules section. 
@@ -81,7 +82,7 @@ COMMENT	(\/\/.*)
 <ML_COMMENT>"*"+[^*\/\n]*
 <ML_COMMENT>\n	{currentLineNum++;currentColNum=1;}
 <ML_COMMENT>"*"+"\/"	{BEGIN(INITIAL);}
-<ML_COMMENT><<EOF>>	{ReportError::UntermComment();}
+<ML_COMMENT><<EOF>>	{ReportError::UntermComment(); return 0;}
 
 [\n]		{currentLineNum++; currentColNum = 1;}
 [\t]		{currentColNum += 8 - ((currentColNum -1) % 8);}
@@ -166,6 +167,18 @@ void 		{return T_Void;}
 {FLOAT}		{yylval.floatConstant = atof(yytext);
 			return T_FloatConstant;}
 
+<FIELDS>{IDENTIFIER} {
+                BEGIN(INITIAL);
+                if(strlen(yytext)>1023){
+                        ReportError::LongIdentifier(&yylloc, yytext);
+                        strncpy(yylval.identifier, yytext, MaxIdentLen);
+                        yylval.identifier[MaxIdentLen]='\0';
+                }
+                else
+                        strcpy(yylval.identifier, yytext);
+                return T_FieldSelection;}
+
+
 {IDENTIFIER}	{if(strlen(yytext)>1023){
 			ReportError::LongIdentifier(&yylloc, yytext);
 			strncpy(yylval.identifier, yytext, MaxIdentLen);
@@ -175,17 +188,6 @@ void 		{return T_Void;}
 			strcpy(yylval.identifier, yytext);		
 		return T_Identifier;}
 
-<FIELDS>{IDENTIFIER} {
-		BEGIN(INITIAL);
-		if(strlen(yytext)>1023){
-			ReportError::LongIdentifier(&yylloc, yytext);
-			strncpy(yylval.identifier, yytext, MaxIdentLen);
-			yylval.identifier[MaxIdentLen]='\0';
-		}
-		else
-			strcpy(yylval.identifier, yytext);		
-		return T_FieldSelection;}
-<FIELDS>[ \t\r]	{ }
 {INVALID}	{ReportError::UnrecogChar(&yylloc, yytext[0]);}
 {COMMENT}
 %%
