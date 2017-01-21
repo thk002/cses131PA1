@@ -66,7 +66,7 @@ BOOLEAN   (true|false)
 DIGIT	([0-9])
 NONDIGIT	(_|[a-z]|[A-Z])
 IDENTIFIER	({NONDIGIT}[_a-zA-Z0-9]*)
-INVALID ([\^#@$`\\"!%|&])
+INVALID ([,\^#@$`\\"!%|&])
 COMMENT	(\/\/.*)
 
 %x ML_COMMENT 
